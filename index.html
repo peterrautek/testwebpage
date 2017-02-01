@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<head>
+  <title>Vega Visualizer</title>
+  <meta charset="utf-8">
+
+  
+  <script src="./lib/d3-3.5.17/d3.v3.js"></script>
+  <script src="./lib/vega-2.6.0/vega.js"></script>
+  <script src="./lib/vega-lite-1.3.1/vega-lite.js"></script>
+  <script src="./lib/vega-embed-2.2.0/vega-embed.js"></script>
+
+
+  <style media="screen">
+    /* Add space between vega-embed links  */
+    .vega-actions a {
+      margin-right: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>template title</h1>
+  
+  <!-- Container for first visualization -->
+  <div id="visualizations">
+  <div id="vis01"></div>
+  
+  <!-- UI for visualization. can we handle that with our DSL? -->
+  <input type="button" value="insert value" onclick="insertValue('vis01')">
+  <input type="button" value="remove value" onclick="removeValue('vis01')">
+  <input type="button" value="update value" onclick="updateValue('vis01')">
+  <input type="button" value="start periodic insert" onclick="startPeriodicInsertion('vis01')">
+  <input type="button" value="stop periodic insert" onclick="stopPeriodicInsertion('vis01')">
+  
+  <!-- Container for second visualization -->
+  <div id="vis02"></div>
+  </div>
+  <input type="button" value="clear all" onclick="clearVisualizations()">
+  <script>
+  
+  <!-- Vega-Lite Specifications -->
+  var vlSpec1 = {
+    "data": {
+      "values": [
+        {"a": "C", "b": 2}, {"a": "F", "b": 7}, {"a": "I", "b": 4},
+        {"a": "D", "b": 1}, {"a": "G", "b": 2}, {"a": "J", "b": 6},
+        {"a": "E", "b": 8}, {"a": "H", "b": 4}, {"a": "K", "b": 7}
+      ]
+    },
+    "mark": "square",
+    "encoding": {
+      "y": {"field": "a", "type": "nominal"},
+      "x": {"field": "b", "type": "quantitative"}
+      
+    }
+  };
+  
+   var vlSpec2 = {
+    "data": {"url": "data/gapminder.json"},
+    "mark": "point",
+    "encoding": {
+		// "column": {"field": "year","type": "ordinal"},
+		// "row": {"field": "country","type": "ordinal"},
+      "y": {"field": "pop", "type": "quantitative"},
+      "x": {"field": "fertility", "type": "quantitative"}
+      
+    }
+  };
+  
+  <!-- Vega-Embed Specifications -->
+  var embedSpec1 = {
+    mode: "vega-lite",  // Instruct Vega-Embed to use the Vega-Lite compiler
+    spec: vlSpec1
+    // You can add more vega-embed configuration properties here.
+    // See https://github.com/vega/vega/wiki/Embed-Vega-Web-Components#configuration-propeties for more information.
+  };
+  
+  var embedSpec2 = {
+    mode: "vega-lite",  // Instruct Vega-Embed to use the Vega-Lite compiler
+    spec: vlSpec2
+    // You can add more vega-embed configuration properties here.
+    // See https://github.com/vega/vega/wiki/Embed-Vega-Web-Components#configuration-propeties for more information.
+  };
+
+  
+  <!-- Vega Embedding-->
+  var resultEmbedding = {};
+  // Embed the visualization in the container with id `vis`
+  vg.embed("#vis01", embedSpec1, function(error, result) {
+	resultEmbedding["vis01"] = result;
+    // Callback receiving the View instance and parsed Vega spec
+    // result.view is the View, which resides under the '#vis' element
+  });
+  
+  vg.embed("#vis02", embedSpec2, function(error, result) {
+	resultEmbedding["vis02"] = result;
+    // Callback receiving the View instance and parsed Vega spec
+    // result.view is the View, which resides under the '#vis' element
+  });
+  
+function insertValue(visHandle){
+	resultEmbedding[visHandle].view.data("source").insert([{"a":"K", "b":12}])
+	resultEmbedding[visHandle].view.update()
+}
+
+function removeValue(visHandle){
+	resultEmbedding[visHandle].view.data("source").remove(function(d){return d.a=="K"})
+	resultEmbedding[visHandle].view.update()
+}
+	
+function updateValue(visHandle){
+	resultEmbedding[visHandle].view.data("source").update(function(d) { return d.b > 5; }, 'b', function(d) { return d.b - 5; });
+	resultEmbedding[visHandle].view.update()
+}
+
+var chartSpecification = {};
+var chartData = {};
+
+function generateVisualizations(){
+	var a = chartSpecification["data"];
+	alert("chart: "+a.toString());
+}
+
+function clearVisualizations(){
+	//TODO
+}
+
+var intervalID = {};
+var counter = {};
+
+function startPeriodicInsertion(visHandle){
+	if(intervalID[visHandle]){
+		clearInterval(intervalID[visHandle]);
+	}
+	intervalID[visHandle] = setInterval( function(){
+								if( isNaN(counter[visHandle]) ){counter[visHandle]=0;}
+								resultEmbedding[visHandle].view.data("source").remove(function(d){return d.a=="K"}); 
+								resultEmbedding[visHandle].view.data("source").insert([{"a":"K", "b":counter[visHandle]}]); 
+								resultEmbedding[visHandle].view.update(); 
+								counter[visHandle]++;
+							}
+							, 500);
+}
+
+function stopPeriodicInsertion(visHandle){
+	clearInterval(intervalID[visHandle]);
+}
+
+
+
+  </script>
+</body>
+</html>
